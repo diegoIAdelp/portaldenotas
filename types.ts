@@ -4,6 +4,12 @@ export enum UserRole {
   USER = 'USER'
 }
 
+export enum InvoiceStatus {
+  EM_ANALISE = 'EM_ANALISE',
+  RECEBIDA = 'RECEBIDA',
+  PENDENTE = 'PENDENTE'
+}
+
 export interface User {
   id: string;
   name: string;
@@ -25,6 +31,8 @@ export interface Invoice {
   userName: string; // Display name
   createdAt: string;
   observations?: string;
+  status: InvoiceStatus;
+  adminObservations?: string;
 }
 
 export interface AuthState {

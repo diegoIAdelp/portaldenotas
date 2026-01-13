@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, UserRole, Invoice } from './types';
+import { User, UserRole, Invoice, InvoiceStatus } from './types';
 import { DEFAULT_ADMIN, MOCK_STANDARD_USER, APP_NAME, APP_SUBTITLE } from './constants';
 import Sidebar from './components/Sidebar';
 import InvoiceForm from './components/InvoiceForm';
@@ -21,13 +21,11 @@ const App: React.FC = () => {
 
   // Inicialização de dados persistentes
   useEffect(() => {
-    // Carregar Notas
     const savedInvoices = localStorage.getItem('noteflow_invoices');
     if (savedInvoices) {
       setInvoices(JSON.parse(savedInvoices));
     }
 
-    // Carregar Usuários
     const savedUsers = localStorage.getItem('noteflow_users');
     if (savedUsers) {
       setUsers(JSON.parse(savedUsers));
@@ -38,18 +36,24 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleSaveInvoice = (newInvoice: Invoice) => {
-    const updated = [newInvoice, ...invoices];
+  const handleSaveInvoice = (newInvoice: any) => {
+    // Garante que a nota nasce "Em Análise"
+    const invoiceWithStatus = { ...newInvoice, status: InvoiceStatus.EM_ANALISE };
+    const updated = [invoiceWithStatus, ...invoices];
     setInvoices(updated);
     localStorage.setItem('noteflow_invoices', JSON.stringify(updated));
     setView('list');
   };
 
+  const handleUpdateInvoice = (updatedInvoice: Invoice) => {
+    const updated = invoices.map(inv => inv.id === updatedInvoice.id ? updatedInvoice : inv);
+    setInvoices(updated);
+    localStorage.setItem('noteflow_invoices', JSON.stringify(updated));
+  };
+
   const handleUpdateUsers = (newUsers: User[]) => {
     setUsers(newUsers);
     localStorage.setItem('noteflow_users', JSON.stringify(newUsers));
-    
-    // Se o usuário logado foi alterado ou excluído, atualiza o estado local
     const loggedUserStillExists = newUsers.find(u => u.id === currentUser?.id);
     if (!loggedUserStillExists) {
       setCurrentUser(null);
@@ -60,8 +64,6 @@ const App: React.FC = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Busca usuário na lista persistente
     const user = users.find(u => 
       (u.email.toLowerCase() === loginIdentifier.toLowerCase() || u.id === loginIdentifier) && 
       u.password === loginPassword
@@ -145,12 +147,12 @@ const App: React.FC = () => {
               <h2 className="text-2xl font-bold text-slate-900">
                 {view === 'dashboard' ? 'Painel Administrativo' : 
                  view === 'management' ? 'Gerenciamento de Notas e Usuários' :
-                 view === 'upload' ? 'Postagem de Notas' : 'Listagem de Notas'}
+                 view === 'upload' ? 'Postagem de Notas' : 'Minhas Notas'}
               </h2>
               <p className="text-slate-500 text-sm">
                 {view === 'dashboard' ? 'Visão geral do sistema e análise Delp.' : 
                  view === 'management' ? 'Controle total, exportação para excel e gestão de usuários.' :
-                 view === 'upload' ? 'Envie seus documentos de forma rápida.' : 'Gerencie as notas postadas.'}
+                 view === 'upload' ? 'Envie seus documentos de forma rápida.' : 'Gerencie e acompanhe o status de suas notas.'}
               </p>
             </div>
             <div className="text-right">
@@ -179,7 +181,7 @@ const App: React.FC = () => {
           )}
 
           {view === 'list' && (
-            <InvoiceList invoices={invoices} user={currentUser} />
+            <InvoiceList invoices={invoices} user={currentUser} onUpdateInvoice={handleUpdateInvoice} />
           )}
         </div>
       </main>
