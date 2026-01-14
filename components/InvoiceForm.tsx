@@ -1,7 +1,7 @@
 
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { analyzeInvoiceImage } from '../services/geminiService';
-import { Supplier, ViewType } from '../types';
+import { Supplier, ViewType, Invoice, InvoiceStatus } from '../types';
 
 interface InvoiceFormProps {
   onSuccess: (invoice: any) => void;
@@ -10,9 +10,10 @@ interface InvoiceFormProps {
   userName: string;
   userSector: string;
   suppliers: Supplier[];
+  editData?: Invoice | null;
 }
 
-const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, onNavigate, userId, userName, userSector, suppliers }) => {
+const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, onNavigate, userId, userName, userSector, suppliers, editData }) => {
   const [loading, setLoading] = useState(false);
   const [supplierSearch, setSupplierSearch] = useState('');
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
@@ -31,6 +32,23 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, onNavigate, userId
   
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editData) {
+      setFormData({
+        supplierName: editData.supplierName,
+        supplierCnpj: editData.supplierCnpj || '',
+        supplierId: editData.supplierId || '',
+        invoiceNumber: editData.invoiceNumber,
+        emissionDate: editData.emissionDate,
+        orderNumber: editData.orderNumber || '',
+        value: editData.value.toString(),
+        observations: editData.observations || '',
+      });
+      setDocType(editData.docType);
+      setSupplierSearch(editData.supplierName);
+    }
+  }, [editData]);
 
   const filteredSuppliers = useMemo(() => {
     if (!supplierSearch) return [];
@@ -85,22 +103,24 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, onNavigate, userId
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return alert('Por favor, selecione um arquivo.');
+    if (!file && !editData) return alert('Por favor, selecione um arquivo.');
 
-    const newInvoice = {
-      id: Math.random().toString(36).substr(2, 9),
+    const payload = {
+      id: editData ? editData.id : Math.random().toString(36).substr(2, 9),
       ...formData,
       docType,
       value: parseFloat(formData.value) || 0,
-      pdfUrl: URL.createObjectURL(file),
-      fileName: file.name,
-      uploadedBy: userId,
-      userName: userName,
-      userSector: userSector,
-      createdAt: new Date().toISOString(),
+      pdfUrl: file ? URL.createObjectURL(file) : (editData?.pdfUrl || ''),
+      fileName: file ? file.name : (editData?.fileName || ''),
+      uploadedBy: editData ? editData.uploadedBy : userId,
+      userName: editData ? editData.userName : userName,
+      userSector: editData ? editData.userSector : userSector,
+      createdAt: editData ? editData.createdAt : new Date().toISOString(),
+      status: InvoiceStatus.EM_ANALISE,
+      adminObservations: editData ? '' : undefined
     };
 
-    onSuccess(newInvoice);
+    onSuccess(payload);
     setFormData({ supplierName: '', supplierCnpj: '', supplierId: '', invoiceNumber: '', emissionDate: '', orderNumber: '', value: '', observations: '' });
     setSupplierSearch('');
     setFile(null);
@@ -108,32 +128,35 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, onNavigate, userId
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-bottom-4">
       <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-        <h2 className="text-xl font-bold text-slate-800">Postar Nota Fiscal</h2>
-        <div className="text-[10px] font-bold bg-red-100 text-red-700 px-3 py-1 rounded-full uppercase tracking-widest">{userSector}</div>
+        <div>
+           <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">{editData ? 'Corrigir Nota Fiscal' : 'Postar Nota Fiscal'}</h2>
+           {editData && <p className="text-[10px] text-red-600 font-bold uppercase mt-0.5 italic">Atenção: verifique a pendência apontada pelo admin</p>}
+        </div>
+        <div className="text-[10px] font-bold bg-red-600 text-white px-3 py-1 rounded-full uppercase tracking-widest shadow-md shadow-red-100">{userSector}</div>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           
-          <div className="space-y-2 relative">
-            <div className="flex justify-between items-center">
-              <label className="block text-sm font-semibold text-slate-700">Buscar Fornecedor (Nome ou CNPJ)</label>
+          <div className="space-y-1.5 relative">
+            <div className="flex justify-between items-end mb-0.5">
+              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Fornecedor</label>
               <button 
-                type="button"
+                type="button" 
                 onClick={() => onNavigate('suppliers')}
-                className="text-[10px] font-bold text-red-600 hover:underline uppercase"
+                className="text-[10px] font-black text-red-600 hover:text-red-800 underline uppercase tracking-tighter transition-colors"
               >
-                + Cadastrar novo
+                + Novo Cadastro
               </button>
             </div>
             <div className="relative">
               <input
                 type="text"
                 required
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none pr-10"
-                placeholder="Digite o nome ou CNPJ..."
+                className="w-full px-4 py-3 border-2 border-slate-100 rounded-xl focus:border-red-500 outline-none transition-all text-sm font-bold bg-slate-50/50"
+                placeholder="Nome ou CNPJ..."
                 value={supplierSearch}
                 onChange={(e) => {
                   setSupplierSearch(e.target.value);
@@ -142,14 +165,11 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, onNavigate, userId
                 }}
                 onFocus={() => setShowSupplierDropdown(true)}
               />
-              <div className="absolute right-3 top-2.5 text-slate-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-              </div>
             </div>
             {showSupplierDropdown && filteredSuppliers.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+              <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-48 overflow-y-auto">
                 {filteredSuppliers.map(s => (
-                  <button key={s.id} type="button" onClick={() => handleSelectSupplier(s)} className="w-full text-left px-4 py-2 hover:bg-red-50 transition-colors border-b last:border-0 border-slate-100">
+                  <button key={s.id} type="button" onClick={() => handleSelectSupplier(s)} className="w-full text-left px-4 py-3 hover:bg-red-50 transition-colors border-b last:border-0 border-slate-100">
                     <div className="font-bold text-sm text-slate-800">{s.name}</div>
                     <div className="text-[10px] text-slate-500 font-mono">{s.cnpj}</div>
                   </button>
@@ -158,45 +178,42 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, onNavigate, userId
             )}
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-slate-700">Número da Nota Fiscal</label>
-            <input type="text" required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" placeholder="Ex: 000.123.456" value={formData.invoiceNumber} onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })} />
+          <div className="space-y-1.5">
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Número da Nota Fiscal</label>
+            <input type="text" required className="w-full px-4 py-3 border-2 border-slate-100 rounded-xl focus:border-red-500 outline-none transition-all text-sm font-bold bg-slate-50/50" placeholder="000.000" value={formData.invoiceNumber} onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })} />
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-slate-700">Data de Emissão</label>
-            <input type="date" required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" value={formData.emissionDate} onChange={(e) => setFormData({ ...formData, emissionDate: e.target.value })} />
+          <div className="space-y-1.5">
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Data de Emissão</label>
+            <input type="date" required className="w-full px-4 py-3 border-2 border-slate-100 rounded-xl focus:border-red-500 outline-none transition-all text-sm font-bold bg-slate-50/50" value={formData.emissionDate} onChange={(e) => setFormData({ ...formData, emissionDate: e.target.value })} />
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-slate-700">Valor Total (R$)</label>
-            <input type="number" step="0.01" required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-bold text-red-700" placeholder="0,00" value={formData.value} onChange={(e) => setFormData({ ...formData, value: e.target.value })} />
+          <div className="space-y-1.5">
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Valor Total (R$)</label>
+            <input type="number" step="0.01" required className="w-full px-4 py-3 border-2 border-slate-100 rounded-xl focus:border-red-500 outline-none transition-all text-sm font-black text-red-600 bg-slate-50/50" placeholder="0,00" value={formData.value} onChange={(e) => setFormData({ ...formData, value: e.target.value })} />
           </div>
 
-          <div className="space-y-3 col-span-1 md:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
-            <div className="flex items-center space-x-6">
-              <label className="text-sm font-bold text-slate-700">Vínculo de Faturamento:</label>
-              <div className="flex items-center space-x-4">
-                <label className="flex items-center space-x-2 cursor-pointer">
+          <div className="space-y-3 col-span-1 md:col-span-2 bg-slate-50 p-5 rounded-2xl border-2 border-slate-100">
+            <div className="flex items-center space-x-6 mb-1">
+              <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Vínculo:</label>
+              <div className="flex items-center space-x-6">
+                <label className="flex items-center space-x-2 cursor-pointer group">
                   <input type="radio" checked={docType === 'OSV'} onChange={() => setDocType('OSV')} className="w-4 h-4 text-red-600 focus:ring-red-500" />
-                  <span className="text-sm font-medium text-slate-600">OSV</span>
+                  <span className="text-[11px] font-bold text-slate-600 group-hover:text-red-600 transition-colors uppercase">OSV</span>
                 </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
+                <label className="flex items-center space-x-2 cursor-pointer group">
                   <input type="radio" checked={docType === 'CONTRATO'} onChange={() => setDocType('CONTRATO')} className="w-4 h-4 text-red-600 focus:ring-red-500" />
-                  <span className="text-sm font-medium text-slate-600">Contrato</span>
+                  <span className="text-[11px] font-bold text-slate-600 group-hover:text-red-600 transition-colors uppercase">CONTRATO</span>
                 </label>
               </div>
             </div>
             
             <div className="space-y-1">
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                {docType === 'OSV' ? 'Número da Ordem de Serviço / OSV' : 'Número da Ordem de Serviço / OSV (Opcional)'}
-              </label>
               <input 
                 type="text" 
                 required={docType === 'OSV'}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" 
-                placeholder={docType === 'OSV' ? "Ex: 017543" : "Não obrigatório para Contratos"} 
+                className="w-full px-4 py-3 border-2 border-white rounded-xl focus:border-red-500 outline-none transition-all text-sm font-bold" 
+                placeholder={docType === 'OSV' ? "Número da Ordem de Serviço (Obrigatório)" : "OS / Contrato (Opcional)"} 
                 value={formData.orderNumber} 
                 onChange={(e) => setFormData({ ...formData, orderNumber: e.target.value })} 
               />
@@ -204,26 +221,45 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, onNavigate, userId
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-slate-700">Observações (Opcional)</label>
-          <textarea className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none min-h-[80px]" placeholder="..." value={formData.observations} onChange={(e) => setFormData({ ...formData, observations: e.target.value })} />
+        <div className="space-y-1.5">
+          <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Observações</label>
+          <textarea className="w-full px-4 py-2 border-2 border-slate-100 rounded-xl focus:border-red-500 outline-none transition-all min-h-[60px] text-sm font-medium bg-slate-50/30" placeholder="Informações adicionais..." value={formData.observations} onChange={(e) => setFormData({ ...formData, observations: e.target.value })} />
         </div>
 
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-slate-700">Anexo (PDF ou Imagem)</label>
-          <div onClick={() => fileInputRef.current?.click()} className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all ${file ? 'border-green-400 bg-green-50' : 'border-slate-300 hover:border-red-400 hover:bg-slate-50'}`}>
+        <div className="space-y-1.5">
+          <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+            {editData ? 'Alterar Anexo (Opcional)' : 'Anexo (PDF ou Imagem)'}
+          </label>
+          <div onClick={() => fileInputRef.current?.click()} className={`border-3 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all ${file ? 'border-green-400 bg-green-50' : 'border-slate-200 hover:border-red-400 hover:bg-slate-50'}`}>
             {loading ? (
-              <div className="flex flex-col items-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500 mb-2"></div><p className="text-sm text-slate-600">IA analisando documento...</p></div>
+              <div className="flex flex-col items-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mb-2"></div><p className="text-[10px] font-bold text-slate-600 uppercase">Processando...</p></div>
             ) : file ? (
-              <div className="text-center"><svg className="w-12 h-12 text-green-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p className="text-sm font-medium text-slate-900">{file.name}</p></div>
+              <div className="text-center"><div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-green-600 mx-auto mb-2"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg></div><p className="text-[11px] font-black text-slate-900 uppercase truncate max-w-[200px]">{file.name}</p></div>
+            ) : editData ? (
+               <div className="text-center">
+                 <p className="text-[10px] font-black text-slate-400 uppercase">Documento anterior preservado</p>
+                 <button type="button" className="mt-2 text-[10px] font-bold text-blue-600 uppercase hover:underline">Trocar arquivo</button>
+               </div>
             ) : (
-              <div className="text-center"><svg className="w-12 h-12 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg><p className="text-sm font-medium text-slate-900">Clique para enviar</p></div>
+              <div className="text-center">
+                <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 mx-auto mb-2">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                </div>
+                <p className="text-[10px] font-black text-slate-400 uppercase">PDF ou Imagem da Nota</p>
+              </div>
             )}
             <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,image/*" />
           </div>
         </div>
 
-        <button type="submit" className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transform transition-all active:scale-95 shadow-md uppercase tracking-widest text-sm">Postar Nota Fiscal</button>
+        <div className="flex gap-4 pt-2">
+           {editData && (
+             <button type="button" onClick={() => onNavigate('invoices')} className="flex-1 bg-slate-100 text-slate-500 font-black py-4 rounded-xl hover:bg-slate-200 transition-all uppercase text-[11px] tracking-widest border border-slate-200">Voltar</button>
+           )}
+           <button type="submit" className="flex-[2] bg-red-600 text-white font-black py-4 rounded-xl hover:bg-red-700 shadow-lg shadow-red-100 transition-all active:scale-95 uppercase text-[11px] tracking-widest">
+             {editData ? 'Atualizar e Reenviar' : 'Confirmar Postagem'}
+           </button>
+        </div>
       </form>
     </div>
   );

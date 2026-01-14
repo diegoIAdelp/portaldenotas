@@ -54,6 +54,7 @@ export interface Invoice {
   observations?: string;
   status: InvoiceStatus;
   adminObservations?: string;
+  managerNotifiedEmail?: string; // E-mail do gestor notificado
   userResponse?: string;
   docType: 'OSV' | 'CONTRATO'; // Tipo de vínculo
 }
@@ -65,6 +66,8 @@ export type FilterOptions = {
   invoiceNumber: string;
   dateFrom: string;
   dateTo: string;
+  postDateFrom: string; // Novo
+  postDateTo: string;   // Novo
   userName: string;
   sector: string;
 };

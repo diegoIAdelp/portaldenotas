@@ -18,6 +18,7 @@ const App: React.FC = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
 
   useEffect(() => {
     const savedInvoices = localStorage.getItem('noteflow_invoices');
@@ -39,11 +40,21 @@ const App: React.FC = () => {
     if (savedSuppliers) setSuppliers(JSON.parse(savedSuppliers));
   }, []);
 
-  const handleSaveInvoice = (newInvoice: any) => {
-    const invoiceWithStatus = { ...newInvoice, status: InvoiceStatus.EM_ANALISE };
-    const updated = [invoiceWithStatus, ...invoices];
+  const handleSaveInvoice = (invoiceData: any) => {
+    let updated;
+    const exists = invoices.find(i => i.id === invoiceData.id);
+    
+    if (exists) {
+      updated = invoices.map(i => i.id === invoiceData.id ? { ...invoiceData, status: InvoiceStatus.EM_ANALISE } : i);
+      alert('Nota fiscal atualizada com sucesso!');
+    } else {
+      updated = [{ ...invoiceData, status: InvoiceStatus.EM_ANALISE }, ...invoices];
+      alert('Nota fiscal postada com sucesso!');
+    }
+    
     setInvoices(updated);
     localStorage.setItem('noteflow_invoices', JSON.stringify(updated));
+    setEditingInvoice(null);
     setView('invoices');
   };
 
@@ -59,6 +70,11 @@ const App: React.FC = () => {
     localStorage.setItem('noteflow_invoices', JSON.stringify(updated));
   };
 
+  const handleEditRequest = (invoice: Invoice) => {
+    setEditingInvoice(invoice);
+    setView('upload');
+  };
+
   const handleUpdateUsers = (newUsers: User[]) => {
     setUsers(newUsers);
     localStorage.setItem('noteflow_users', JSON.stringify(newUsers));
@@ -67,6 +83,22 @@ const App: React.FC = () => {
   const handleUpdateSuppliers = (newSuppliers: Supplier[]) => {
     setSuppliers(newSuppliers);
     localStorage.setItem('noteflow_suppliers', JSON.stringify(newSuppliers));
+  };
+
+  const handleImportFullData = (data: { invoices?: Invoice[], users?: User[], suppliers?: Supplier[] }) => {
+    if (data.invoices) {
+      setInvoices(data.invoices);
+      localStorage.setItem('noteflow_invoices', JSON.stringify(data.invoices));
+    }
+    if (data.users) {
+      setUsers(data.users);
+      localStorage.setItem('noteflow_users', JSON.stringify(data.users));
+    }
+    if (data.suppliers) {
+      setSuppliers(data.suppliers);
+      localStorage.setItem('noteflow_suppliers', JSON.stringify(data.suppliers));
+    }
+    alert('Base de dados restaurada com sucesso!');
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -111,7 +143,7 @@ const App: React.FC = () => {
 
   return (
     <div className="flex bg-slate-50 min-h-screen">
-      <Sidebar user={currentUser} activeView={view} onNavigate={setView} onLogout={() => setCurrentUser(null)} />
+      <Sidebar user={currentUser} activeView={view} onNavigate={(v) => { setView(v); setEditingInvoice(null); }} onLogout={() => setCurrentUser(null)} />
       <main className="flex-1 p-8 overflow-y-auto">
         <div className="max-w-7xl mx-auto">
           <header className="mb-10 flex justify-between items-center">
@@ -119,7 +151,7 @@ const App: React.FC = () => {
               <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">
                 {view === 'dashboard' && 'Dashboard Estratégico'}
                 {view === 'invoices' && 'Gerenciador de Notas'}
-                {view === 'upload' && 'Postagem de Nota Fiscal'}
+                {view === 'upload' && (editingInvoice ? 'Corrigir Pendência' : 'Postagem de Nota Fiscal')}
                 {view === 'suppliers' && 'Base de Fornecedores'}
                 {view === 'users' && 'Gestão de Usuários'}
                 {view === 'system' && 'Configurações do Sistema'}
@@ -134,8 +166,26 @@ const App: React.FC = () => {
 
           <div className="animate-in fade-in zoom-in-95 duration-500">
             {view === 'dashboard' && currentUser.role === UserRole.ADMIN && <AdminDashboard invoices={invoices} />}
-            {view === 'invoices' && <InvoiceList invoices={invoices} user={currentUser} onUpdateInvoice={handleUpdateInvoice} onDeleteInvoice={handleDeleteInvoice} />}
-            {view === 'upload' && <InvoiceForm onSuccess={handleSaveInvoice} onNavigate={setView} userId={currentUser.id} userName={currentUser.name} userSector={currentUser.sector} suppliers={suppliers} />}
+            {view === 'invoices' && (
+              <InvoiceList 
+                invoices={invoices} 
+                user={currentUser} 
+                onUpdateInvoice={handleUpdateInvoice} 
+                onDeleteInvoice={handleDeleteInvoice}
+                onEditInvoice={handleEditRequest}
+              />
+            )}
+            {view === 'upload' && (
+              <InvoiceForm 
+                onSuccess={handleSaveInvoice} 
+                onNavigate={setView} 
+                userId={currentUser.id} 
+                userName={currentUser.name} 
+                userSector={currentUser.sector} 
+                suppliers={suppliers} 
+                editData={editingInvoice}
+              />
+            )}
             {view === 'suppliers' && <SupplierManagement suppliers={suppliers} onUpdateSuppliers={handleUpdateSuppliers} />}
             {(view === 'users' || view === 'system') && currentUser.role === UserRole.ADMIN && (
               <AdminManagement 
@@ -144,6 +194,7 @@ const App: React.FC = () => {
                 onUpdateUsers={handleUpdateUsers} 
                 suppliers={suppliers}
                 activeView={view}
+                onImportData={handleImportFullData}
               />
             )}
           </div>
