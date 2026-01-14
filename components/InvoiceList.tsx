@@ -46,12 +46,10 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, user, onUpdateInvoi
           ? inv.userSector.toLowerCase().includes(filters.sector.toLowerCase())
           : true;
         
-        // Filtro por Data de Emissão
         let matchDate = true;
         if (filters.dateFrom) matchDate = matchDate && inv.emissionDate >= filters.dateFrom;
         if (filters.dateTo) matchDate = matchDate && inv.emissionDate <= filters.dateTo;
 
-        // Filtro por Data de Postagem (createdAt)
         let matchPostDate = true;
         const postDate = inv.createdAt.split('T')[0];
         if (filters.postDateFrom) matchPostDate = matchPostDate && postDate >= filters.postDateFrom;
@@ -145,7 +143,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, user, onUpdateInvoi
 
   return (
     <div className="space-y-6 relative">
-      {/* MODAL DE PENDÊNCIA (ADMIN) - Mantido conforme solicitado */}
+      {/* MODAL DE PENDÊNCIA (ADMIN) */}
       {editingNoteId && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in duration-200 border border-red-100">
@@ -225,7 +223,6 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, user, onUpdateInvoi
           </div>
         </div>
         
-        {/* ÁREA DE FILTROS - Incluídos filtros de Postagem */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-400 uppercase">Fornecedor</label>
@@ -258,7 +255,6 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, user, onUpdateInvoi
             <label className="text-[10px] font-bold text-slate-400 uppercase">Emissão Até</label>
             <input type="date" className="w-full px-3 py-2 border rounded-lg text-sm outline-none" value={filters.dateTo} onChange={e => setFilters({...filters, dateTo: e.target.value})} />
           </div>
-          {/* Novos Filtros de Postagem */}
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-red-600 uppercase">Postagem De</label>
             <input type="date" className="w-full px-3 py-2 border border-red-100 rounded-lg text-sm outline-none focus:ring-2 focus:ring-red-500" value={filters.postDateFrom} onChange={e => setFilters({...filters, postDateFrom: e.target.value})} />
@@ -281,7 +277,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, user, onUpdateInvoi
                 <th className="px-4 py-4">Setor</th>
                 <th className="px-4 py-4">Vínculo</th>
                 <th className="px-4 py-4">Emissão</th>
-                <th className="px-4 py-4">Postagem</th> {/* Coluna mantida conforme solicitado */}
+                <th className="px-4 py-4">Postagem</th>
                 <th className="px-4 py-4 text-right">Valor</th>
                 <th className="px-4 py-4 text-center">Ações</th>
               </tr>
@@ -325,7 +321,6 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, user, onUpdateInvoi
                   <td className="px-4 py-4 text-[10px] font-medium text-slate-600 whitespace-nowrap">
                     {inv.emissionDate.split('-').reverse().join('/')}
                   </td>
-                  {/* Informação da Data de Postagem conforme solicitado */}
                   <td className="px-4 py-4 text-[10px] font-medium text-slate-400 whitespace-nowrap">
                     <div className="font-bold text-slate-700">{new Date(inv.createdAt).toLocaleDateString('pt-BR')}</div>
                     <div>{new Date(inv.createdAt).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</div>
@@ -339,24 +334,35 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, user, onUpdateInvoi
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                       </a>
                       
-                      {user.role === UserRole.ADMIN && inv.status !== InvoiceStatus.RECEBIDA && (
+                      {/* CONTROLE DE STATUS (EXCLUSIVO ADMIN) - Permite trocar em qualquer estado */}
+                      {user.role === UserRole.ADMIN && (
                         <div className="flex space-x-1 border-l pl-2 border-slate-200">
-                           <button onClick={() => handleStatusChange(inv, InvoiceStatus.RECEBIDA)} className="p-1.5 text-green-600 hover:bg-green-600 hover:text-white rounded transition-all" title="Receber Nota">
-                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
-                           </button>
-                           <button onClick={() => { setEditingNoteId(inv.id); setTempObservation(inv.adminObservations || ''); }} className={`p-1.5 rounded transition-all ${inv.status === InvoiceStatus.PENDENTE ? 'bg-red-600 text-white' : 'text-red-600 hover:bg-red-600 hover:text-white'}`} title="Apontar Pendência">
-                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                           </button>
+                           {inv.status !== InvoiceStatus.RECEBIDA && (
+                             <button onClick={() => handleStatusChange(inv, InvoiceStatus.RECEBIDA)} className="p-1.5 text-green-600 hover:bg-green-600 hover:text-white rounded transition-all" title="Marcar como Recebida">
+                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                             </button>
+                           )}
+                           {inv.status !== InvoiceStatus.PENDENTE && (
+                             <button onClick={() => { setEditingNoteId(inv.id); setTempObservation(inv.adminObservations || ''); }} className="p-1.5 text-red-600 hover:bg-red-600 hover:text-white rounded transition-all" title="Apontar Pendência">
+                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                             </button>
+                           )}
+                           {inv.status !== InvoiceStatus.EM_ANALISE && (
+                             <button onClick={() => handleStatusChange(inv, InvoiceStatus.EM_ANALISE)} className="p-1.5 text-slate-500 hover:bg-slate-500 hover:text-white rounded transition-all" title="Voltar para Análise">
+                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                             </button>
+                           )}
                         </div>
                       )}
 
-                      {inv.uploadedBy === user.id && inv.status === InvoiceStatus.PENDENTE && onEditInvoice && (
-                        <button onClick={() => onEditInvoice(inv)} className="p-1.5 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg transition-all" title="Editar para Corrigir">
+                      {/* EDIÇÃO FORMULÁRIO: Admin sempre pode; Usuário apenas se não estiver RECEBIDA */}
+                      {((user.role === UserRole.ADMIN) || (inv.uploadedBy === user.id && inv.status !== InvoiceStatus.RECEBIDA)) && onEditInvoice && (
+                        <button onClick={() => onEditInvoice(inv)} className="p-1.5 bg-slate-100 text-slate-700 hover:bg-red-600 hover:text-white rounded-lg transition-all" title="Editar Informações">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                         </button>
                       )}
 
-                      {(user.role === UserRole.ADMIN || inv.uploadedBy === user.id) && inv.status !== InvoiceStatus.RECEBIDA && (
+                      {(user.role === UserRole.ADMIN || (inv.uploadedBy === user.id && inv.status !== InvoiceStatus.RECEBIDA)) && (
                         <button onClick={() => handleDelete(inv)} className="p-2 text-slate-400 hover:text-red-600 transition-colors" title="Excluir Registro">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         </button>
