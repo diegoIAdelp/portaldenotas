@@ -1,17 +1,18 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import { analyzeInvoiceImage } from '../services/geminiService';
-import { Supplier } from '../types';
+import { Supplier, ViewType } from '../types';
 
 interface InvoiceFormProps {
   onSuccess: (invoice: any) => void;
+  onNavigate: (view: ViewType) => void;
   userId: string;
   userName: string;
   userSector: string;
   suppliers: Supplier[];
 }
 
-const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, userId, userName, userSector, suppliers }) => {
+const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, onNavigate, userId, userName, userSector, suppliers }) => {
   const [loading, setLoading] = useState(false);
   const [supplierSearch, setSupplierSearch] = useState('');
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
@@ -117,7 +118,16 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, userId, userName, 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
           <div className="space-y-2 relative">
-            <label className="block text-sm font-semibold text-slate-700">Buscar Fornecedor (Nome ou CNPJ)</label>
+            <div className="flex justify-between items-center">
+              <label className="block text-sm font-semibold text-slate-700">Buscar Fornecedor (Nome ou CNPJ)</label>
+              <button 
+                type="button"
+                onClick={() => onNavigate('suppliers')}
+                className="text-[10px] font-bold text-red-600 hover:underline uppercase"
+              >
+                + Cadastrar novo
+              </button>
+            </div>
             <div className="relative">
               <input
                 type="text"
@@ -186,7 +196,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, userId, userName, 
                 type="text" 
                 required={docType === 'OSV'}
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" 
-                placeholder={docType === 'OSV' ? "Ex: OC-2024-001" : "Não obrigatório para Contratos"} 
+                placeholder={docType === 'OSV' ? "Ex: 017543" : "Não obrigatório para Contratos"} 
                 value={formData.orderNumber} 
                 onChange={(e) => setFormData({ ...formData, orderNumber: e.target.value })} 
               />

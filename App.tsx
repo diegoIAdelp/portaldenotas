@@ -135,7 +135,7 @@ const App: React.FC = () => {
           <div className="animate-in fade-in zoom-in-95 duration-500">
             {view === 'dashboard' && currentUser.role === UserRole.ADMIN && <AdminDashboard invoices={invoices} />}
             {view === 'invoices' && <InvoiceList invoices={invoices} user={currentUser} onUpdateInvoice={handleUpdateInvoice} onDeleteInvoice={handleDeleteInvoice} />}
-            {view === 'upload' && <InvoiceForm onSuccess={handleSaveInvoice} userId={currentUser.id} userName={currentUser.name} userSector={currentUser.sector} suppliers={suppliers} />}
+            {view === 'upload' && <InvoiceForm onSuccess={handleSaveInvoice} onNavigate={setView} userId={currentUser.id} userName={currentUser.name} userSector={currentUser.sector} suppliers={suppliers} />}
             {view === 'suppliers' && <SupplierManagement suppliers={suppliers} onUpdateSuppliers={handleUpdateSuppliers} />}
             {(view === 'users' || view === 'system') && currentUser.role === UserRole.ADMIN && (
               <AdminManagement 
