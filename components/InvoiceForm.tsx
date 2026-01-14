@@ -7,13 +7,15 @@ interface InvoiceFormProps {
   onSuccess: (invoice: any) => void;
   userId: string;
   userName: string;
+  userSector: string;
   suppliers: Supplier[];
 }
 
-const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, userId, userName, suppliers }) => {
+const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, userId, userName, userSector, suppliers }) => {
   const [loading, setLoading] = useState(false);
   const [supplierSearch, setSupplierSearch] = useState('');
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
+  const [docType, setDocType] = useState<'OSV' | 'CONTRATO'>('OSV');
   
   const [formData, setFormData] = useState({
     supplierName: '',
@@ -87,11 +89,13 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, userId, userName, 
     const newInvoice = {
       id: Math.random().toString(36).substr(2, 9),
       ...formData,
+      docType,
       value: parseFloat(formData.value) || 0,
       pdfUrl: URL.createObjectURL(file),
       fileName: file.name,
       uploadedBy: userId,
       userName: userName,
+      userSector: userSector,
       createdAt: new Date().toISOString(),
     };
 
@@ -99,12 +103,14 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, userId, userName, 
     setFormData({ supplierName: '', supplierCnpj: '', supplierId: '', invoiceNumber: '', emissionDate: '', orderNumber: '', value: '', observations: '' });
     setSupplierSearch('');
     setFile(null);
+    setDocType('OSV');
   };
 
   return (
     <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div className="p-6 border-b border-slate-100 bg-slate-50">
-        <h2 className="text-xl font-bold text-slate-800">Postar Nova Nota Fiscal</h2>
+      <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+        <h2 className="text-xl font-bold text-slate-800">Postar Nota Fiscal</h2>
+        <div className="text-[10px] font-bold bg-red-100 text-red-700 px-3 py-1 rounded-full uppercase tracking-widest">{userSector}</div>
       </div>
 
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -130,23 +136,16 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, userId, userName, 
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
               </div>
             </div>
-            
             {showSupplierDropdown && filteredSuppliers.length > 0 && (
               <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                 {filteredSuppliers.map(s => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => handleSelectSupplier(s)}
-                    className="w-full text-left px-4 py-2 hover:bg-red-50 transition-colors border-b last:border-0 border-slate-100"
-                  >
+                  <button key={s.id} type="button" onClick={() => handleSelectSupplier(s)} className="w-full text-left px-4 py-2 hover:bg-red-50 transition-colors border-b last:border-0 border-slate-100">
                     <div className="font-bold text-sm text-slate-800">{s.name}</div>
                     <div className="text-[10px] text-slate-500 font-mono">{s.cnpj}</div>
                   </button>
                 ))}
               </div>
             )}
-            <p className="text-[10px] text-slate-400 italic">Se não encontrar, digite o nome completo manualmente.</p>
           </div>
 
           <div className="space-y-2">
@@ -164,9 +163,34 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, userId, userName, 
             <input type="number" step="0.01" required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-bold text-red-700" placeholder="0,00" value={formData.value} onChange={(e) => setFormData({ ...formData, value: e.target.value })} />
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-slate-700">Ordem de Compra / OSV / OS</label>
-            <input type="text" required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" placeholder="Ex: OC-2024-001" value={formData.orderNumber} onChange={(e) => setFormData({ ...formData, orderNumber: e.target.value })} />
+          <div className="space-y-3 col-span-1 md:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div className="flex items-center space-x-6">
+              <label className="text-sm font-bold text-slate-700">Vínculo de Faturamento:</label>
+              <div className="flex items-center space-x-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input type="radio" checked={docType === 'OSV'} onChange={() => setDocType('OSV')} className="w-4 h-4 text-red-600 focus:ring-red-500" />
+                  <span className="text-sm font-medium text-slate-600">OSV</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input type="radio" checked={docType === 'CONTRATO'} onChange={() => setDocType('CONTRATO')} className="w-4 h-4 text-red-600 focus:ring-red-500" />
+                  <span className="text-sm font-medium text-slate-600">Contrato</span>
+                </label>
+              </div>
+            </div>
+            
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                {docType === 'OSV' ? 'Número da Ordem de Serviço / OSV' : 'Número da Ordem de Serviço / OSV (Opcional)'}
+              </label>
+              <input 
+                type="text" 
+                required={docType === 'OSV'}
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" 
+                placeholder={docType === 'OSV' ? "Ex: OC-2024-001" : "Não obrigatório para Contratos"} 
+                value={formData.orderNumber} 
+                onChange={(e) => setFormData({ ...formData, orderNumber: e.target.value })} 
+              />
+            </div>
           </div>
         </div>
 
@@ -189,7 +213,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, userId, userName, 
           </div>
         </div>
 
-        <button type="submit" className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transform transition-all active:scale-95 shadow-md">Postar Nota Fiscal</button>
+        <button type="submit" className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transform transition-all active:scale-95 shadow-md uppercase tracking-widest text-sm">Postar Nota Fiscal</button>
       </form>
     </div>
   );

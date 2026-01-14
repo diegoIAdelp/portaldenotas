@@ -1,6 +1,7 @@
 
 export enum UserRole {
   ADMIN = 'ADMIN',
+  MANAGER = 'MANAGER', // Gestor de Setor
   USER = 'USER'
 }
 
@@ -16,6 +17,7 @@ export interface User {
   email: string;
   password?: string;
   role: UserRole;
+  sector: string; // Setor do usuário
 }
 
 export interface Supplier {
@@ -47,11 +49,13 @@ export interface Invoice {
   fileName: string;
   uploadedBy: string;
   userName: string;
+  userSector: string; // Setor no momento da postagem
   createdAt: string;
   observations?: string;
   status: InvoiceStatus;
   adminObservations?: string;
-  userResponse?: string; // Resposta do usuário à pendência
+  userResponse?: string;
+  docType: 'OSV' | 'CONTRATO'; // Tipo de vínculo
 }
 
 export type ViewType = 'dashboard' | 'upload' | 'invoices' | 'suppliers' | 'users' | 'system';
@@ -62,4 +66,5 @@ export type FilterOptions = {
   dateFrom: string;
   dateTo: string;
   userName: string;
+  sector: string;
 };

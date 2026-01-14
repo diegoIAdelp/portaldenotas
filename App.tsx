@@ -27,15 +27,16 @@ const App: React.FC = () => {
     if (savedUsers) {
       setUsers(JSON.parse(savedUsers));
     } else {
-      const initialUsers = [DEFAULT_ADMIN, MOCK_STANDARD_USER];
+      const initialUsers = [
+        { ...DEFAULT_ADMIN, sector: 'DIRETORIA' },
+        { ...MOCK_STANDARD_USER, sector: 'FINANCEIRO' }
+      ];
       setUsers(initialUsers);
       localStorage.setItem('noteflow_users', JSON.stringify(initialUsers));
     }
 
     const savedSuppliers = localStorage.getItem('noteflow_suppliers');
-    if (savedSuppliers) {
-      setSuppliers(JSON.parse(savedSuppliers));
-    }
+    if (savedSuppliers) setSuppliers(JSON.parse(savedSuppliers));
   }, []);
 
   const handleSaveInvoice = (newInvoice: any) => {
@@ -104,7 +105,6 @@ const App: React.FC = () => {
             <button type="submit" className="w-full bg-red-600 text-white font-black py-4 rounded-2xl hover:bg-red-700 shadow-xl shadow-red-200 transition-all active:scale-[0.98] uppercase text-sm tracking-widest">Entrar no Portal</button>
           </form>
         </div>
-        <p className="mt-8 text-slate-400 text-xs font-medium">Delp Engenharia Mecânica • Todos os direitos reservados</p>
       </div>
     );
   }
@@ -128,14 +128,14 @@ const App: React.FC = () => {
             </div>
             <div className="text-right flex items-center space-x-3 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-               <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">Sistema Online</span>
+               <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">{currentUser.sector}</span>
             </div>
           </header>
 
           <div className="animate-in fade-in zoom-in-95 duration-500">
             {view === 'dashboard' && currentUser.role === UserRole.ADMIN && <AdminDashboard invoices={invoices} />}
             {view === 'invoices' && <InvoiceList invoices={invoices} user={currentUser} onUpdateInvoice={handleUpdateInvoice} onDeleteInvoice={handleDeleteInvoice} />}
-            {view === 'upload' && <InvoiceForm onSuccess={handleSaveInvoice} userId={currentUser.id} userName={currentUser.name} suppliers={suppliers} />}
+            {view === 'upload' && <InvoiceForm onSuccess={handleSaveInvoice} userId={currentUser.id} userName={currentUser.name} userSector={currentUser.sector} suppliers={suppliers} />}
             {view === 'suppliers' && <SupplierManagement suppliers={suppliers} onUpdateSuppliers={handleUpdateSuppliers} />}
             {(view === 'users' || view === 'system') && currentUser.role === UserRole.ADMIN && (
               <AdminManagement 
