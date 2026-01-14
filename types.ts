@@ -18,27 +18,43 @@ export interface User {
   role: UserRole;
 }
 
+export interface Supplier {
+  id: string;
+  name: string; // Nome Fantasia
+  razaoSocial: string;
+  cnpj: string;
+  endereco: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
+  cep: string;
+  contactEmail?: string;
+  active: boolean;
+}
+
 export interface Invoice {
   id: string;
+  supplierId?: string;
   supplierName: string;
+  supplierCnpj?: string;
   invoiceNumber: string;
   emissionDate: string;
-  orderNumber: string; // PO / OSV / OS
-  value: number; // Valor da nota
+  orderNumber: string; 
+  value: number;
   pdfUrl: string;
   fileName: string;
-  uploadedBy: string; // User ID
-  userName: string; // Display name
+  uploadedBy: string;
+  userName: string;
   createdAt: string;
   observations?: string;
   status: InvoiceStatus;
   adminObservations?: string;
+  userResponse?: string; // Resposta do usuário à pendência
 }
 
-export interface AuthState {
-  user: User | null;
-  isAuthenticated: boolean;
-}
+export type ViewType = 'dashboard' | 'upload' | 'invoices' | 'suppliers' | 'users' | 'system';
 
 export type FilterOptions = {
   supplierName: string;
