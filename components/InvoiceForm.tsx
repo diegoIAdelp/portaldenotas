@@ -8,12 +8,13 @@ interface InvoiceFormProps {
   onNavigate: (view: ViewType) => void;
   userId: string;
   userName: string;
+  userEmail?: string; // Prop adicionada para vínculo
   userSector: string;
   suppliers: Supplier[];
   editData?: Invoice | null;
 }
 
-const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, onNavigate, userId, userName, userSector, suppliers, editData }) => {
+const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, onNavigate, userId, userName, userEmail, userSector, suppliers, editData }) => {
   const [loading, setLoading] = useState(false);
   const [supplierSearch, setSupplierSearch] = useState('');
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
@@ -114,6 +115,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, onNavigate, userId
       fileName: file ? file.name : (editData?.fileName || ''),
       uploadedBy: editData ? editData.uploadedBy : userId,
       userName: editData ? editData.userName : userName,
+      userEmail: editData ? editData.userEmail : userEmail, // Gravando e-mail de notificação
       userSector: editData ? editData.userSector : userSector,
       createdAt: editData ? editData.createdAt : new Date().toISOString(),
       status: InvoiceStatus.EM_ANALISE,
@@ -139,16 +141,15 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, onNavigate, userId
 
       <form onSubmit={handleSubmit} className="p-6 space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          
           <div className="space-y-1.5 relative">
             <div className="flex justify-between items-end mb-0.5">
               <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Fornecedor</label>
               <button 
                 type="button" 
                 onClick={() => onNavigate('suppliers')}
-                className="text-[10px] font-black text-red-600 hover:text-red-800 underline uppercase tracking-tighter transition-colors"
+                className="text-[9px] font-black text-red-600 uppercase hover:underline hover:text-red-700 transition-all cursor-pointer"
               >
-                + Novo Cadastro
+                + Novo Fornecedor
               </button>
             </div>
             <div className="relative">
@@ -207,7 +208,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, onNavigate, userId
                 </label>
               </div>
             </div>
-            
             <div className="space-y-1">
               <input 
                 type="text" 
@@ -227,19 +227,12 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, onNavigate, userId
         </div>
 
         <div className="space-y-1.5">
-          <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
-            {editData ? 'Alterar Anexo (Opcional)' : 'Anexo (PDF ou Imagem)'}
-          </label>
+          <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Anexo</label>
           <div onClick={() => fileInputRef.current?.click()} className={`border-3 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all ${file ? 'border-green-400 bg-green-50' : 'border-slate-200 hover:border-red-400 hover:bg-slate-50'}`}>
             {loading ? (
               <div className="flex flex-col items-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mb-2"></div><p className="text-[10px] font-bold text-slate-600 uppercase">Processando...</p></div>
             ) : file ? (
               <div className="text-center"><div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-green-600 mx-auto mb-2"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg></div><p className="text-[11px] font-black text-slate-900 uppercase truncate max-w-[200px]">{file.name}</p></div>
-            ) : editData ? (
-               <div className="text-center">
-                 <p className="text-[10px] font-black text-slate-400 uppercase">Documento anterior preservado</p>
-                 <button type="button" className="mt-2 text-[10px] font-bold text-blue-600 uppercase hover:underline">Trocar arquivo</button>
-               </div>
             ) : (
               <div className="text-center">
                 <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 mx-auto mb-2">
@@ -253,11 +246,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSuccess, onNavigate, userId
         </div>
 
         <div className="flex gap-4 pt-2">
-           {editData && (
-             <button type="button" onClick={() => onNavigate('invoices')} className="flex-1 bg-slate-100 text-slate-500 font-black py-4 rounded-xl hover:bg-slate-200 transition-all uppercase text-[11px] tracking-widest border border-slate-200">Voltar</button>
-           )}
-           <button type="submit" className="flex-[2] bg-red-600 text-white font-black py-4 rounded-xl hover:bg-red-700 shadow-lg shadow-red-100 transition-all active:scale-95 uppercase text-[11px] tracking-widest">
-             {editData ? 'Atualizar e Reenviar' : 'Confirmar Postagem'}
+           <button type="submit" className="w-full bg-red-600 text-white font-black py-4 rounded-xl hover:bg-red-700 shadow-lg shadow-red-100 transition-all active:scale-95 uppercase text-[11px] tracking-widest">
+             Confirmar Postagem
            </button>
         </div>
       </form>

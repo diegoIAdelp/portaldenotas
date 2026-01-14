@@ -68,18 +68,47 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, user, onUpdateInvoi
   const handleSavePendency = () => {
     if (!editingNoteId || !onUpdateInvoice) return;
     const invoice = invoices.find(i => i.id === editingNoteId);
+    
     if (invoice) {
+      // 1. Atualiza o status no sistema
       onUpdateInvoice({ 
         ...invoice, 
         status: InvoiceStatus.PENDENTE, 
         adminObservations: tempObservation,
         managerNotifiedEmail: notifyManager ? managerEmail : undefined
       });
-      
-      if (notifyManager) {
-        alert(`Sucesso: A pendência foi salva e o gestor (${managerEmail}) foi informado.`);
-      }
 
+      // 2. Montagem do E-mail Padrão para Outlook
+      const subject = `PENDÊNCIA - NF ${invoice.invoiceNumber} - ${invoice.supplierName}`;
+      
+      const emailBody = `Prezado(a) ${invoice.userName},
+
+Informamos que a Nota Fiscal mencionada abaixo apresenta uma pendência identificada pela equipe fiscal e precisa de sua atenção para prosseguimento do fluxo de recebimento.
+
+DETALHES DA NOTA:
+Fornecedor: ${invoice.supplierName}
+Número da NF: ${invoice.invoiceNumber}
+Setor: ${invoice.userSector}
+
+MOTIVO DA PENDÊNCIA:
+"${tempObservation.toUpperCase()}"
+
+PROCEDIMENTO:
+Favor acessar o Portal de Notas Delp, localizar o registro na aba "Gerenciador de Notas" e realizar a correção conforme as observações acima.
+
+Atenciosamente,
+Equipe Fiscal - Delp`;
+
+      // 3. Trigger do Outlook (mailto)
+      const recipient = invoice.userEmail || '';
+      const cc = notifyManager ? managerEmail : '';
+      
+      const mailtoUrl = `mailto:${recipient}?cc=${cc}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
+      
+      // Abrir o Outlook
+      window.location.href = mailtoUrl;
+
+      // Reset de UI
       setEditingNoteId(null);
       setTempObservation('');
       setManagerEmail('');
@@ -158,11 +187,17 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, user, onUpdateInvoi
             </div>
             <div className="p-8 space-y-5">
               <div className="space-y-2">
-                <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Motivo da Pendência</p>
+                <div className="flex justify-between items-end">
+                   <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Motivo da Pendência</p>
+                   <span className={`text-[10px] font-bold ${tempObservation.length >= 40 ? 'text-red-600' : 'text-slate-400'}`}>
+                     {tempObservation.length} / 40
+                   </span>
+                </div>
                 <textarea 
-                  className="w-full h-28 p-4 border-2 border-slate-100 rounded-2xl focus:border-red-500 outline-none transition-all text-sm font-medium bg-slate-50"
-                  placeholder="Explique o que deve ser corrigido pelo colaborador..."
+                  className="w-full h-24 p-4 border-2 border-slate-100 rounded-2xl focus:border-red-500 outline-none transition-all text-sm font-medium bg-slate-50 resize-none"
+                  placeholder="Explique o que deve ser corrigido (Máx 40 caracteres)..."
                   value={tempObservation}
+                  maxLength={40}
                   onChange={e => setTempObservation(e.target.value)}
                 />
               </div>
@@ -175,7 +210,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, user, onUpdateInvoi
                     checked={notifyManager}
                     onChange={e => setNotifyManager(e.target.checked)}
                   />
-                  <span className="text-xs font-bold text-slate-700 uppercase">Notificar Gestor do Setor por E-mail</span>
+                  <span className="text-xs font-bold text-slate-700 uppercase">Notificar Gestor em Cópia (Outlook)</span>
                 </label>
 
                 {notifyManager && (
@@ -187,7 +222,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, user, onUpdateInvoi
                       value={managerEmail}
                       onChange={e => setManagerEmail(e.target.value)}
                     />
-                    <p className="text-[9px] text-slate-400 mt-1 ml-1 uppercase font-bold">* O sistema registrará o envio da cópia ao gestor.</p>
+                    <p className="text-[9px] text-slate-400 mt-1 ml-1 uppercase font-bold">* O Outlook incluirá este e-mail no campo CC automaticamente.</p>
                   </div>
                 )}
               </div>
@@ -199,7 +234,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, user, onUpdateInvoi
                   disabled={!tempObservation.trim() || (notifyManager && !managerEmail.includes('@'))}
                   className="flex-1 px-6 py-3 bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 hover:bg-red-700 disabled:opacity-50 transition-all uppercase text-xs"
                 >
-                  Confirmar e Notificar
+                  Abrir Outlook e Enviar
                 </button>
               </div>
             </div>
@@ -296,7 +331,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, user, onUpdateInvoi
                            {inv.managerNotifiedEmail && (
                              <div className="flex items-center gap-1 text-[9px] text-slate-500 font-bold uppercase">
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                                Gestor: {inv.managerNotifiedEmail}
+                                Gestor em Cópia (Outlook)
                              </div>
                            )}
                         </div>
@@ -334,7 +369,6 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, user, onUpdateInvoi
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                       </a>
                       
-                      {/* CONTROLE DE STATUS (EXCLUSIVO ADMIN) - Permite trocar em qualquer estado */}
                       {user.role === UserRole.ADMIN && (
                         <div className="flex space-x-1 border-l pl-2 border-slate-200">
                            {inv.status !== InvoiceStatus.RECEBIDA && (
@@ -355,7 +389,6 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, user, onUpdateInvoi
                         </div>
                       )}
 
-                      {/* EDIÇÃO FORMULÁRIO: Admin sempre pode; Usuário apenas se não estiver RECEBIDA */}
                       {((user.role === UserRole.ADMIN) || (inv.uploadedBy === user.id && inv.status !== InvoiceStatus.RECEBIDA)) && onEditInvoice && (
                         <button onClick={() => onEditInvoice(inv)} className="p-1.5 bg-slate-100 text-slate-700 hover:bg-red-600 hover:text-white rounded-lg transition-all" title="Editar Informações">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>

@@ -180,7 +180,8 @@ const App: React.FC = () => {
                 onSuccess={handleSaveInvoice} 
                 onNavigate={setView} 
                 userId={currentUser.id} 
-                userName={currentUser.name} 
+                userName={currentUser.name}
+                userEmail={currentUser.notificationEmail} 
                 userSector={currentUser.sector} 
                 suppliers={suppliers} 
                 editData={editingInvoice}

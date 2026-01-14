@@ -52,23 +52,17 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ invoices, users, supp
       link.download = `BACKUP_TOTAL_DELP_${timestamp}.json`;
       link.click();
     } else {
-      // Exportação CSV Completa (Mapeamento de todos os campos)
       const rows: string[] = [];
-      
-      // Cabeçalho Universal (União de todos os campos possíveis para garantir integridade)
       rows.push("TIPO;ID;CAMPO1;CAMPO2;CAMPO3;CAMPO4;CAMPO5;CAMPO6;CAMPO7;CAMPO8;CAMPO9;CAMPO10;CAMPO11;CAMPO12;CAMPO13;CAMPO14;CAMPO15;CAMPO16;CAMPO17;CAMPO18;CAMPO19;CAMPO20");
 
-      // Exportar Usuários
       users.forEach(u => {
-        rows.push(`USUARIO;${u.id};${u.name};${u.email};${u.password || ''};${u.role};${u.sector};;;;;;;;;;;;;;;`);
+        rows.push(`USUARIO;${u.id};${u.name};${u.email};${u.password || ''};${u.role};${u.sector};${u.notificationEmail || ''};;;;;;;;;;;;;`);
       });
 
-      // Exportar Fornecedores
       suppliers.forEach(s => {
         rows.push(`FORNECEDOR;${s.id};${s.name};${s.razaoSocial};${s.cnpj};${s.endereco};${s.numero};${s.complemento};${s.bairro};${s.cidade};${s.uf};${s.cep};${s.contactEmail || ''};${s.active};;;;;;;;`);
       });
 
-      // Exportar Notas (Todos os 20 campos)
       invoices.forEach(i => {
         rows.push(`NOTA;${i.id};${i.supplierId || ''};${i.supplierName};${i.supplierCnpj || ''};${i.invoiceNumber};${i.emissionDate};${i.orderNumber};${i.value};${i.pdfUrl};${i.fileName};${i.uploadedBy};${i.userName};${i.userSector};${i.createdAt};${i.observations || ''};${i.status};${i.adminObservations || ''};${i.managerNotifiedEmail || ''};${i.userResponse || ''};${i.docType}`);
       });
@@ -110,7 +104,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ invoices, users, supp
             const tipo = p[0];
             
             if (tipo === 'USUARIO') {
-              importedUsers.push({ id: p[1], name: p[2], email: p[3], password: p[4], role: p[5] as any, sector: p[6] });
+              importedUsers.push({ id: p[1], name: p[2], email: p[3], password: p[4], role: p[5] as any, sector: p[6], notificationEmail: p[7] });
             } else if (tipo === 'FORNECEDOR') {
               importedSuppliers.push({ id: p[1], name: p[2], razaoSocial: p[3], cnpj: p[4], endereco: p[5], numero: p[6], complemento: p[7], bairro: p[8], cidade: p[9], uf: p[10], cep: p[11], contactEmail: p[12], active: p[13] === 'true' });
             } else if (tipo === 'NOTA') {
@@ -146,35 +140,22 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ invoices, users, supp
             <h3 className="text-xl font-bold text-slate-800">Exportação Estruturada</h3>
             <p className="text-sm text-slate-500 max-w-xs">Baixe todos os registros de Notas, Usuários e Fornecedores com todos os campos preenchidos.</p>
             <div className="flex gap-3 w-full pt-4">
-              <button onClick={() => exportFullBackup('json')} className="flex-1 bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition-all text-sm uppercase">Backup JSON (Recomendado)</button>
-              <button onClick={() => exportFullBackup('csv')} className="flex-1 bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition-all text-sm uppercase">Backup Excel/CSV</button>
+              <button onClick={() => exportFullBackup('json')} className="flex-1 bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition-all text-sm uppercase">Backup JSON</button>
+              <button onClick={() => exportFullBackup('csv')} className="flex-1 bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition-all text-sm uppercase">Backup Excel</button>
             </div>
           </div>
-
           <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center text-center space-y-4">
             <div className="w-16 h-16 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
             </div>
             <h3 className="text-xl font-bold text-slate-800">Restauração de Sistema</h3>
-            <p className="text-sm text-slate-500 max-w-xs">Selecione um backup anterior para restaurar o portal ao estado original. Isso apagará os dados atuais.</p>
+            <p className="text-sm text-slate-500 max-w-xs">Importe um arquivo JSON ou CSV para restaurar a base.</p>
             <div className="w-full pt-4">
               <label className="block w-full cursor-pointer bg-red-600 text-white font-bold py-3 rounded-xl text-center hover:bg-red-700 transition-all text-sm shadow-lg shadow-red-100 uppercase tracking-widest">
                 Importar e Restaurar
                 <input type="file" className="hidden" accept=".json,.csv" onChange={handleFileUpload} />
               </label>
             </div>
-          </div>
-        </div>
-
-        <div className="bg-amber-50 border border-amber-100 p-6 rounded-2xl flex items-start gap-4">
-          <div className="p-2 bg-amber-100 text-amber-600 rounded-lg">
-             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          </div>
-          <div>
-            <h4 className="text-amber-800 font-bold mb-1">Informação sobre Arquivos PDF</h4>
-            <p className="text-amber-700 text-xs leading-relaxed">
-              Os arquivos PDF anexados são temporários nesta versão do portal. O backup salva os metadados e URLs, mas o arquivo físico deve ser mantido em sua máquina local para visualização permanente após a restauração da base de dados.
-            </p>
           </div>
         </div>
       </div>
@@ -187,7 +168,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ invoices, users, supp
         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div>
             <h3 className="text-lg font-bold text-slate-800">Gestão de Acessos</h3>
-            <p className="text-xs text-slate-500">Controle quem pode postar e gerenciar notas na Delp.</p>
+            <p className="text-xs text-slate-500">Controle quem pode postar e gerenciar notas.</p>
           </div>
           <button 
             onClick={() => { setEditingUser({ role: UserRole.USER, sector: DELP_SECTORS[0] }); setIsEditingUser(true); }}
@@ -199,46 +180,42 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ invoices, users, supp
 
         <div className="p-6">
           {isEditingUser ? (
-            <form onSubmit={handleSaveUser} className="space-y-6 max-w-2xl mx-auto bg-slate-50 p-8 rounded-2xl border border-slate-200 shadow-inner">
+            <form onSubmit={handleSaveUser} className="space-y-6 max-w-2xl mx-auto bg-slate-50 p-8 rounded-2xl border border-slate-200">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Nome Completo</label>
-                  <input type="text" required className="w-full px-4 py-3 border-2 border-slate-100 rounded-xl text-sm focus:border-red-500 outline-none transition-all font-bold" value={editingUser.name || ''} onChange={e => setEditingUser({...editingUser, name: e.target.value})} />
+                  <input type="text" required className="w-full px-4 py-3 border-2 border-slate-100 rounded-xl text-sm font-bold" value={editingUser.name || ''} onChange={e => setEditingUser({...editingUser, name: e.target.value})} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">E-mail de Notificação (Workflow)</label>
+                  <input type="email" placeholder="e-mail@delp.com.br" required className="w-full px-4 py-3 border-2 border-slate-100 rounded-xl text-sm font-bold bg-white" value={editingUser.notificationEmail || ''} onChange={e => setEditingUser({...editingUser, notificationEmail: e.target.value})} />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Usuário de Login</label>
-                  <input type="text" required className="w-full px-4 py-3 border-2 border-slate-100 rounded-xl text-sm focus:border-red-500 outline-none transition-all font-bold" value={editingUser.email || ''} onChange={e => setEditingUser({...editingUser, email: e.target.value})} />
+                  <input type="text" required className="w-full px-4 py-3 border-2 border-slate-100 rounded-xl text-sm font-bold" value={editingUser.email || ''} onChange={e => setEditingUser({...editingUser, email: e.target.value})} />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Senha</label>
-                  <input type="text" required className="w-full px-4 py-3 border-2 border-slate-100 rounded-xl text-sm focus:border-red-500 outline-none transition-all font-bold" value={editingUser.password || ''} onChange={e => setEditingUser({...editingUser, password: e.target.value})} />
+                  <input type="text" required className="w-full px-4 py-3 border-2 border-slate-100 rounded-xl text-sm font-bold" value={editingUser.password || ''} onChange={e => setEditingUser({...editingUser, password: e.target.value})} />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Nível de Acesso</label>
-                  <select required className="w-full px-4 py-3 border-2 border-slate-100 rounded-xl text-sm appearance-none bg-white font-bold" value={editingUser.role} onChange={e => setEditingUser({...editingUser, role: e.target.value as UserRole})}>
+                  <select required className="w-full px-4 py-3 border-2 border-slate-100 rounded-xl text-sm font-bold bg-white" value={editingUser.role} onChange={e => setEditingUser({...editingUser, role: e.target.value as UserRole})}>
                     <option value={UserRole.USER}>Colaborador</option>
                     <option value={UserRole.MANAGER}>Gestor de Setor</option>
                     <option value={UserRole.ADMIN}>Administrador Master</option>
                   </select>
                 </div>
-                <div className="space-y-1 md:col-span-2">
+                <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Setor Delp</label>
-                  <select 
-                    required 
-                    className="w-full px-4 py-3 border-2 border-slate-100 rounded-xl text-sm font-bold uppercase bg-white focus:border-red-500 outline-none" 
-                    value={editingUser.sector || ''} 
-                    onChange={e => setEditingUser({...editingUser, sector: e.target.value})}
-                  >
-                    <option value="" disabled>Selecione um setor...</option>
-                    {DELP_SECTORS.map(sector => (
-                      <option key={sector} value={sector}>{sector}</option>
-                    ))}
+                  <select required className="w-full px-4 py-3 border-2 border-slate-100 rounded-xl text-sm font-bold uppercase bg-white" value={editingUser.sector || ''} onChange={e => setEditingUser({...editingUser, sector: e.target.value})}>
+                    {DELP_SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
-                <button type="button" onClick={() => setIsEditingUser(false)} className="px-6 py-3 text-xs font-black text-slate-500 hover:bg-slate-200 rounded-xl transition-all uppercase tracking-widest">Cancelar</button>
-                <button type="submit" className="px-8 py-3 bg-red-600 text-white rounded-xl font-black shadow-lg shadow-red-100 hover:bg-red-700 transition-all uppercase text-xs tracking-widest">Gravar Usuário</button>
+                <button type="button" onClick={() => setIsEditingUser(false)} className="px-6 py-3 text-xs font-black text-slate-500 hover:bg-slate-200 rounded-xl transition-all uppercase">Cancelar</button>
+                <button type="submit" className="px-8 py-3 bg-red-600 text-white rounded-xl font-black shadow-lg shadow-red-100 hover:bg-red-700 transition-all uppercase text-xs">Gravar Usuário</button>
               </div>
             </form>
           ) : (
@@ -247,7 +224,8 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ invoices, users, supp
                 <thead className="text-[10px] uppercase text-slate-400 font-bold border-b bg-slate-50/30">
                   <tr>
                     <th className="px-4 py-4">Nome / Setor</th>
-                    <th className="px-4 py-4">Login / Senha</th>
+                    <th className="px-4 py-4">Login</th>
+                    <th className="px-4 py-4">E-mail Notificação</th>
                     <th className="px-4 py-4">Acesso</th>
                     <th className="px-4 py-4 text-center">Ações</th>
                   </tr>
@@ -261,7 +239,9 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ invoices, users, supp
                       </td>
                       <td className="px-4 py-4">
                         <div className="text-xs font-medium text-slate-600">{u.email}</div>
-                        <div className="text-[9px] text-slate-400 font-mono">Senha: {u.password}</div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-xs font-bold text-slate-700">{u.notificationEmail || '-'}</div>
                       </td>
                       <td className="px-4 py-4">
                         <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border ${
@@ -272,7 +252,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ invoices, users, supp
                         </span>
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <button onClick={() => { setEditingUser(u); setIsEditingUser(true); }} className="p-2 text-slate-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50">
+                        <button onClick={() => { setEditingUser(u); setIsEditingUser(true); }} className="p-2 text-slate-400 hover:text-red-600 transition-colors">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                         </button>
                       </td>

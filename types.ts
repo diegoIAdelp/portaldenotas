@@ -15,6 +15,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  notificationEmail?: string; // E-mail para recebimento de workflows
   password?: string;
   role: UserRole;
   sector: string; // Setor do usuário
@@ -49,6 +50,7 @@ export interface Invoice {
   fileName: string;
   uploadedBy: string;
   userName: string;
+  userEmail?: string; // E-mail vinculado para workflow
   userSector: string; // Setor no momento da postagem
   createdAt: string;
   observations?: string;
@@ -66,8 +68,8 @@ export type FilterOptions = {
   invoiceNumber: string;
   dateFrom: string;
   dateTo: string;
-  postDateFrom: string; // Novo
-  postDateTo: string;   // Novo
+  postDateFrom: string; 
+  postDateTo: string;   
   userName: string;
   sector: string;
 };

@@ -8,6 +8,7 @@ export const DEFAULT_ADMIN: any = {
   id: 'admin-master', 
   name: 'Administrador Master', 
   email: 'delp', 
+  notificationEmail: 'admin@delp.com.br',
   password: 'delp1234', 
   role: 'ADMIN' 
 };
@@ -16,6 +17,7 @@ export const MOCK_STANDARD_USER: any = {
   id: 'user-1', 
   name: 'Colaborador Delp', 
   email: 'usuario@delp.com.br', 
+  notificationEmail: 'colaborador@delp.com.br',
   password: '123',
   role: 'USER' 
 };
