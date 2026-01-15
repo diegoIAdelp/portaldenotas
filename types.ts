@@ -59,6 +59,7 @@ export interface Invoice {
   managerNotifiedEmail?: string; // E-mail do gestor notificado
   userResponse?: string;
   docType: 'OSV' | 'CONTRATO'; // Tipo de vínculo
+  isExported?: boolean; // Campo para rastrear se o PDF já foi baixado
 }
 
 export type ViewType = 'dashboard' | 'upload' | 'invoices' | 'suppliers' | 'users' | 'system';
@@ -72,4 +73,6 @@ export type FilterOptions = {
   postDateTo: string;   
   userName: string;
   sector: string;
+  status: string;
+  exportedStatus: string; // Novo critério: 'all', 'yes', 'no'
 };
